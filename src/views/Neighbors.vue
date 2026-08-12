@@ -205,9 +205,11 @@ const statsLoading = computed(() => systemStore.stats === null && systemStore.is
 // Global filter functions
 const filterAdverts = (adverts: Advert[]): Advert[] => {
   return adverts.filter((advert) => {
-    // Zero hop filter
+    // Zero hop filter — judged on the CURRENT status (direct reception within
+    // the displayed window), not the sticky flag: the default "zero hop only"
+    // view must not include ghosts that are only heard via flood any more.
     if (filters.value.zeroHop !== 'all') {
-      const isZeroHop = advert.zero_hop;
+      const isZeroHop = advert.zero_hop_current ?? advert.zero_hop;
       if (filters.value.zeroHop === 'true' && !isZeroHop) return false;
       if (filters.value.zeroHop === 'false' && isZeroHop) return false;
     }
@@ -284,8 +286,12 @@ const allAdvertsWithLocation = computed(() => {
         !isNaN(lat) &&
         !isNaN(lng);
 
-      // Default to zero-hop nodes, with optional toggle for all contacts
-      return hasValidLocation && (showAllMapContacts.value || advert.zero_hop === true);
+      // Default to CURRENT zero-hop nodes (same judgement as the link lines
+      // and the table filter), with optional toggle for all contacts.
+      return (
+        hasValidLocation &&
+        (showAllMapContacts.value || (advert.zero_hop_current ?? advert.zero_hop) === true)
+      );
     });
 });
 

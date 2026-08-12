@@ -45,6 +45,10 @@ interface Advert {
   advert_count: number;
   is_new_neighbor: boolean;
   zero_hop: boolean;
+  last_zero_hop_seen?: number | null;
+  // Stamped by the neighbors store: zero_hop AND heard directly within the
+  // displayed window. All zero-hop presentation reads this, not the sticky flag.
+  zero_hop_current?: boolean;
 }
 
 interface Props {
@@ -472,13 +476,13 @@ const sortedAdverts = computed(() => {
               </div>
             </th>
             <th
-              @click="sortColumn('zero_hop')"
+              @click="sortColumn('zero_hop_current')"
               :class="`text-left text-content-secondary dark:text-content-muted text-xs font-medium py-3 ${getCellPadding().split(' ')[1]} border-b border-stroke-subtle dark:border-white/opacity-light cursor-pointer hover:text-primary transition-colors select-none`"
             >
               <div class="flex items-center gap-1">
                 Zero Hop
                 <svg
-                  v-if="sortKey === 'zero_hop'"
+                  v-if="sortKey === 'zero_hop_current'"
                   class="w-3 h-3"
                   :class="sortDirection === 'asc' ? '' : 'rotate-180'"
                   fill="currentColor"
@@ -741,12 +745,12 @@ const sortedAdverts = computed(() => {
               <span
                 :class="[
                   'inline-block px-2 py-1 rounded-full text-xs border transition-colors',
-                  advert.zero_hop
+                  (advert.zero_hop_current ?? advert.zero_hop)
                     ? 'bg-primary/opacity-medium border-primary/opacity-heavy text-primary'
                     : 'bg-accent-amber/opacity-medium border-accent-amber/opacity-heavy text-accent-amber',
                 ]"
               >
-                {{ advert.zero_hop ? 'Zero Hop' : 'Multi-Hop' }}
+                {{ (advert.zero_hop_current ?? advert.zero_hop) ? 'Zero Hop' : 'Multi-Hop' }}
               </span>
             </td>
             <td
@@ -858,12 +862,12 @@ const sortedAdverts = computed(() => {
               <span
                 :class="[
                   'inline-block px-2 py-1 rounded-full text-xs border',
-                  advert.zero_hop
+                  (advert.zero_hop_current ?? advert.zero_hop)
                     ? 'bg-primary/opacity-medium border-primary/opacity-heavy text-primary'
                     : 'bg-accent-amber/opacity-medium border-accent-amber/opacity-heavy text-accent-amber',
                 ]"
               >
-                {{ advert.zero_hop ? 'Zero Hop' : 'Multi-Hop' }}
+                {{ (advert.zero_hop_current ?? advert.zero_hop) ? 'Zero Hop' : 'Multi-Hop' }}
               </span>
             </div>
           </div>

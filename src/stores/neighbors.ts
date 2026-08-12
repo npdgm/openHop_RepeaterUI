@@ -21,6 +21,31 @@ export interface Advert {
   advert_count: number;
   is_new_neighbor: boolean;
   zero_hop: boolean;
+  // When the node was last heard DIRECTLY. zero_hop is sticky ("has ever
+  // been direct") while last_seen refreshes on relayed adverts too, so this
+  // is the only field that can tell a current RF neighbour from a past one.
+  // Absent on backends that predate the column.
+  last_zero_hop_seen?: number | null;
+  // Stamped client-side at fetch: zero_hop AND a direct reception within the
+  // displayed window. Every "zero hop" presentation (map lines, table badge,
+  // details modal, filters) must read this, never the raw sticky flag — a
+  // ghost that is only heard via flood any more must not display as zero-hop
+  // anywhere.
+  zero_hop_current?: boolean;
+}
+
+// Whether this advert represents a CURRENT zero-hop neighbour: heard directly
+// within the given window. Backends that predate last_zero_hop_seen fall back
+// to the sticky flag, which is the historical behavior.
+export function isCurrentZeroHop(advert: Advert, hours: number): boolean {
+  if (advert.zero_hop !== true) {
+    return false;
+  }
+  const direct = advert.last_zero_hop_seen;
+  if (direct === undefined || direct === null) {
+    return true;
+  }
+  return Date.now() / 1000 - direct <= hours * 3600;
 }
 
 export const CONTACT_TYPE_MAP = {
@@ -81,7 +106,14 @@ export const useNeighborStore = defineStore('neighbors', () => {
               break;
             }
 
-            adverts.push(...page);
+            // Stamp the current zero-hop status once, against the window this
+            // fetch used, so every consumer shares the same judgement.
+            adverts.push(
+              ...page.map((advert) => ({
+                ...advert,
+                zero_hop_current: isCurrentZeroHop(advert, hours),
+              })),
+            );
 
             if (page.length < pageSize) {
               break;

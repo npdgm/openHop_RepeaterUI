@@ -28,6 +28,8 @@ interface Advert {
   advert_count: number;
   is_new_neighbor: boolean;
   zero_hop?: boolean;
+  last_zero_hop_seen?: number | null;
+  zero_hop_current?: boolean;
   // Optional jittered coordinates for identical coordinate handling
   jittered_latitude?: number;
   jittered_longitude?: number;
@@ -366,8 +368,13 @@ const initializeOpenStreetMap = async () => {
         return;
       }
 
-      // Only zero-hop contacts should have a connection line to base station.
-      if (!forceLine && advert.zero_hop !== true) {
+      // Only CURRENT zero-hop contacts get a connection line to base station.
+      // zero_hop alone is not enough: the flag is sticky ("has ever been heard
+      // directly") while relayed adverts keep the row fresh, so a node that
+      // left direct range months ago would keep its RF-adjacency line forever.
+      // zero_hop_current is stamped by the neighbors store against the
+      // displayed window; adverts from other sources fall back to the flag.
+      if (!forceLine && (advert.zero_hop_current ?? advert.zero_hop) !== true) {
         return;
       }
 

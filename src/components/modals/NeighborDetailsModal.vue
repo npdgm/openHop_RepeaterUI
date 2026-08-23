@@ -30,6 +30,9 @@ interface Neighbor {
   advert_count: number;
   is_new_neighbor: boolean;
   zero_hop: boolean;
+  last_zero_hop_seen?: number | null;
+  // Current status stamped by the neighbors store; the raw flag is sticky.
+  zero_hop_current?: boolean;
 }
 
 interface Props {
@@ -342,12 +345,18 @@ const signalQuality = computed(() => {
                     <div
                       class="font-medium"
                       :class="
-                        neighbor.zero_hop
+                        (neighbor.zero_hop_current ?? neighbor.zero_hop)
                           ? 'text-accent-green'
                           : 'text-content-muted'
                       "
                     >
-                      {{ neighbor.zero_hop ? 'Yes' : 'No' }}
+                      {{ (neighbor.zero_hop_current ?? neighbor.zero_hop) ? 'Yes' : 'No' }}
+                    </div>
+                    <div
+                      v-if="neighbor.last_zero_hop_seen"
+                      class="text-content-muted text-xs mt-1"
+                    >
+                      Last direct: {{ formatTimestamp(neighbor.last_zero_hop_seen) }}
                     </div>
                   </div>
 
